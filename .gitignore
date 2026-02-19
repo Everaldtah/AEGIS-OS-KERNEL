@@ -1,0 +1,72 @@
+# Linux kernel source (downloaded separately)
+kernel/src/linux-*/
+
+# Build artifacts
+*.o
+*.ko
+*.mod
+*.mod.c
+*.mod.cmd
+*.o.cmd
+*.i
+*.s
+*.so
+*.a
+*.elf
+*.bin
+*.hex
+*.iso
+.*.cmd
+.modules.order.cmd
+
+# Build directories
+build/
+obj/
+output/
+dist/
+*.build/
+
+# Kernel build artifacts
+Module.symvers
+modules.order
+System.map
+vmlinux
+vmlinuz
+arch/*/boot/Image
+arch/*/boot/zImage
+arch/*/boot/bzImage
+.config.old
+.config.cmd
+
+# Compilation databases
+.compile_commands
+compile_commands.json
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Debug files
+*.debug
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.tmp/
+tmp/
+temp/
