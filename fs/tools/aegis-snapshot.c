@@ -20,6 +20,8 @@
 #include <errno.h>
 #include <time.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <dirent.h>
 #include <linux/loop.h>
 
 #define VERSION "1.0.0"
@@ -114,10 +116,14 @@ int snapshot_create(const char *name, const char *description)
 	}
 
 	/* Use rsync to copy current upper layer */
+	char upper_copy_src[PATH_MAX + 2];
+	char upper_copy_dst[PATH_MAX + 2];
+	snprintf(upper_copy_src, sizeof(upper_copy_src), "%s/", OVERLAY_UPPER);
+	snprintf(upper_copy_dst, sizeof(upper_copy_dst), "%s/", upper_copy);
 	pid_t pid = fork();
 	if (pid == 0) {
 		/* Child process */
-		execlp("rsync", "rsync", "-aAX", OVERLAY_UPPER "/", upper_copy "/", NULL);
+		execlp("rsync", "rsync", "-aAX", upper_copy_src, upper_copy_dst, NULL);
 		exit(1);
 	} else if (pid > 0) {
 		int status;
@@ -223,10 +229,14 @@ int snapshot_restore(const char *name)
 	}
 
 	/* Copy snapshot to upper layer */
+	char restore_src[PATH_MAX + 2];
+	char restore_dst[PATH_MAX + 2];
+	snprintf(restore_src, sizeof(restore_src), "%s/", upper_copy);
+	snprintf(restore_dst, sizeof(restore_dst), "%s/", OVERLAY_UPPER);
 	pid = fork();
 	if (pid == 0) {
 		execlp("rsync", "rsync", "-aAX", "--delete",
-		       upper_copy "/", OVERLAY_UPPER "/", NULL);
+		       restore_src, restore_dst, NULL);
 		exit(1);
 	} else if (pid > 0) {
 		int status;
