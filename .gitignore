@@ -2,6 +2,10 @@
 kernel/src/linux-*/
 
 # Build artifacts
+# ForensicFS compiled tools (no extension)
+fs/tools/aegis-snapshot
+fs/tools/aegis-integrity
+fs/tools/aegis-evidence
 *.o
 *.ko
 *.mod
