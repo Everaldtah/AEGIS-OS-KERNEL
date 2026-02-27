@@ -211,6 +211,12 @@ static int __init ai_sentinel_state_init(void)
 	return 0;
 }
 
+/* LSM identity — required by security_add_hooks() in kernel >= 6.7 */
+static const struct lsm_id ai_sentinel_lsmid = {
+	.name = AI_SENTINEL_NAME,
+	.id   = 0,
+};
+
 /* Module initialization */
 int __init ai_sentinel_init(void)
 {
@@ -227,7 +233,7 @@ int __init ai_sentinel_init(void)
 
 	/* Register security hooks */
 	security_add_hooks(ai_sentinel_hooks, ARRAY_SIZE(ai_sentinel_hooks),
-			   AI_SENTINEL_NAME);
+			   &ai_sentinel_lsmid);
 
 	/* Register sysfs interface */
 	ret = ai_sentinel_sysfs_init();

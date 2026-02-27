@@ -325,6 +325,42 @@ int ai_sentinel_task_fix_setuid(struct cred *new, const struct cred *old, int fl
 }
 
 /**
+ * ai_sentinel_ptrace_access_check - Monitor ptrace attach requests
+ * @child: Task being traced
+ * @mode: PTRACE_MODE flags
+ *
+ * Called when a process attempts to ptrace another process.
+ * Debugger attachment is a key indicator of process inspection or injection.
+ */
+int ai_sentinel_ptrace_access_check(struct task_struct *child, unsigned int mode)
+{
+	struct ai_sentinel_event *event;
+
+	if (!sentinel_state.config.enabled)
+		return 0;
+
+	event = kzalloc(sizeof(*event), GFP_ATOMIC);
+	if (!event)
+		return 0;
+
+	event->type = AI_SENTINEL_EVENT_PTRACE;
+	event->pid = current->pid;
+	event->tgid = current->tgid;
+	event->uid = current->cred->uid.val;
+	event->gid = current->cred->gid.val;
+	event->timestamp = ktime_get_ns();
+	memcpy(event->comm, current->comm, TASK_COMM_LEN);
+	event->severity = AI_SENTINEL_SEV_MEDIUM;
+
+	ai_sentinel_event_queue(event);
+
+	/* Reduce trust score for tracer */
+	ai_sentinel_proc_update_score(current->pid, -10);
+
+	return 0;
+}
+
+/**
  * ai_sentinel_file_mmap - Monitor memory mappings
  * @file: File being mapped (can be NULL for anonymous mappings)
  * @reqprot: Protection requested by user
@@ -334,3 +370,35 @@ int ai_sentinel_task_fix_setuid(struct cred *new, const struct cred *old, int fl
  * Called when a process creates a memory mapping.
  * Important for detecting shellcode injection and W+X mappings.
  */
+int ai_sentinel_file_mmap(struct file *file, unsigned long reqprot,
+			  unsigned long prot, unsigned long flags,
+			  unsigned long addr, unsigned long addr_only)
+{
+	struct ai_sentinel_event *event;
+
+	if (!sentinel_state.config.enabled)
+		return 0;
+
+	/* Only track W+X mappings */
+	if (!((prot & PROT_WRITE) && (prot & PROT_EXEC)))
+		return 0;
+
+	event = kzalloc(sizeof(*event), GFP_ATOMIC);
+	if (!event)
+		return 0;
+
+	event->type = AI_SENTINEL_EVENT_MMAP_EXEC;
+	event->pid = current->pid;
+	event->tgid = current->tgid;
+	event->uid = current->cred->uid.val;
+	event->gid = current->cred->gid.val;
+	event->timestamp = ktime_get_ns();
+	memcpy(event->comm, current->comm, TASK_COMM_LEN);
+	event->data.mmap.addr = addr;
+	event->data.mmap.prot = (int)prot;
+	event->severity = ai_sentinel_calculate_severity(event);
+
+	ai_sentinel_event_queue(event);
+
+	return 0;
+}

@@ -24,8 +24,8 @@ MODULE_AUTHOR("AEGIS-OS Project");
 MODULE_DESCRIPTION("AI-Sentinel LSM - Real-time behavioral analysis");
 MODULE_VERSION(AI_SENTINEL_VERSION);
 
-/* Global state */
-static struct ai_sentinel_state sentinel_state;
+/* Global state — non-static so hooks.c, netlink.c, sysfs.c, process_tracker.c can extern it */
+struct ai_sentinel_state sentinel_state;
 
 /* Forward declarations for security hooks */
 static struct security_hook_list ai_sentinel_hooks[] = {
@@ -210,6 +210,12 @@ static int __init ai_sentinel_state_init(void)
 	return 0;
 }
 
+/* LSM identity — required by security_add_hooks() in kernel >= 6.7 */
+static const struct lsm_id ai_sentinel_lsmid = {
+	.name = AI_SENTINEL_NAME,
+	.id   = 0,
+};
+
 /* Module initialization */
 int __init ai_sentinel_init(void)
 {
@@ -226,7 +232,7 @@ int __init ai_sentinel_init(void)
 
 	/* Register security hooks */
 	security_add_hooks(ai_sentinel_hooks, ARRAY_SIZE(ai_sentinel_hooks),
-			   AI_SENTINEL_NAME);
+			   &ai_sentinel_lsmid);
 
 	/* Register sysfs interface */
 	ret = ai_sentinel_sysfs_init();
