@@ -2,7 +2,7 @@
 obj-m := ai_sentinel.o
 ai_sentinel-y := src/main.o src/hooks.o src/process_tracker.o src/netlink.o src/sysfs.o
 ccflags-y := -Wall -Wextra
-KERNEL_DIR := /root/aegis-os/kernel/src/linux-6.6.50
+KERNEL_DIR := /home/user/AEGIS-OS-KERNEL/kernel/src/linux-source-6.8.0
 
 all: modules
 
