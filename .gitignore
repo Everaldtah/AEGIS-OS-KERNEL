@@ -2,6 +2,10 @@
 kernel/src/linux-*/
 
 # Build artifacts
+# ForensicFS compiled tools (no extension)
+fs/tools/aegis-snapshot
+fs/tools/aegis-integrity
+fs/tools/aegis-evidence
 *.o
 *.ko
 *.mod
@@ -70,3 +74,15 @@ desktop.ini
 .tmp/
 tmp/
 temp/
+
+# Downloaded kernel source (large, not tracked)
+kernel/src/linux-source-6.8.0/
+kernel/src/linux-6.6.50.tar.xz
+
+# Build artifacts from module compile attempt
+modules/ai-sentinel/src/.*.d
+modules/ai-sentinel/src/*.o
+modules/ai-sentinel/*.o.d
+
+# Initramfs creation script (build artifact)
+build/images/create-initramfs.sh
