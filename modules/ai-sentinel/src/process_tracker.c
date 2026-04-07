@@ -75,11 +75,17 @@ int ai_sentinel_proc_add(pid_t pid, struct task_struct *task)
 			char *tmp;
 			get_file(exe_file);
 			tmp = dentry_path_raw(exe_file->f_path.dentry,
-					      path, PATH_MAX);
-			if (IS_ERR(tmp))
+					 path, PATH_MAX);
+			if (IS_ERR(tmp)) {
 				path[0] = '\0';
-			else if (tmp != path)
-				memmove(path, tmp, strlen(tmp) + 1);
+			} else if (tmp != path) {
+				size_t len = strlen(tmp);
+				if (len >= PATH_MAX) {
+					path[0] = '\0';
+				} else {
+					memmove(path, tmp, len + 1);
+				}
+			}
 			fput(exe_file);
 		}
 		up_read(&mm->mmap_lock);
@@ -112,22 +118,28 @@ int ai_sentinel_proc_add(pid_t pid, struct task_struct *task)
  */
 void ai_sentinel_proc_remove(pid_t pid)
 {
-	struct ai_sentinel_proc *proc;
+	struct ai_sentinel_proc *proc, *tmp;
+	struct ai_sentinel_proc *victim = NULL;
 	unsigned long flags;
 
-	spin_lock_irqsave(&sentinel_state.proc_lock, flags);
-	list_for_each_entry(proc, &sentinel_state.proc_list, list) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(proc, &sentinel_state.proc_list, list) {
 		if (proc->pid == pid) {
-			list_del_rcu(&proc->list);
-			spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
-			synchronize_rcu();
-			pr_debug("AI-Sentinel: Removed process %s (pid=%d, score=%d)\n",
-				 proc->comm, proc->pid, proc->trust_score);
-			kfree(proc);
-			return;
+			victim = proc;
+			break;
 		}
 	}
-	spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
+	rcu_read_unlock();
+
+	if (victim) {
+		spin_lock_irqsave(&sentinel_state.proc_lock, flags);
+		list_del_rcu(&victim->list);
+		spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
+		synchronize_rcu();
+		pr_debug("AI-Sentinel: Removed process %s (pid=%d)\n",
+			 victim->comm, victim->pid);
+		kfree(victim);
+	}
 }
 
 /**
