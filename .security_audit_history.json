@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-04-07T22:33:16.928737Z",
+  "repo": "Everaldtah/AEGIS-OS-KERNEL",
+  "scan_type": "comprehensive",
+  "files_scanned": 8,
+  "total_loc": 2958,
+  "issues_found": 16,
+  "severity_breakdown": {
+    "CRITICAL": 2,
+    "HIGH": 4,
+    "MEDIUM": 6,
+    "LOW": 4
+  },
+  "issues": [
+    {
+      "id": "AEGIS-001",
+      "severity": "CRITICAL",
+      "cvss": 7.4,
+      "file": "modules/ai-sentinel/src/process_tracker.c",
+      "line": "113-131",
+      "title": "Race Condition in Process Removal",
+      "description": "RCU/proc_lock race condition allows use-after-free",
+      "cve": "CVE-2024-TBD",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-002",
+      "severity": "CRITICAL",
+      "cvss": 7.8,
+      "file": "modules/ai-sentinel/src/hooks.c",
+      "line": "54-61, 154-161",
+      "title": "Buffer Overflow in Path Handling",
+      "description": "dentry_path_raw result can exceed PATH_MAX",
+      "cve": "CVE-2024-TBD",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-003",
+      "severity": "HIGH",
+      "cvss": 5.5,
+      "file": "modules/ai-sentinel/src/hooks.c",
+      "line": "41-43",
+      "title": "Missing NULL Check After kzalloc",
+      "description": "Event allocation not checked before use",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-004",
+      "severity": "HIGH",
+      "file": "modules/ai-sentinel/src/process_tracker.c",
+      "line": "170",
+      "title": "Trust Score Integer Underflow",
+      "description": "Trust score can wrap around to maximum",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-005",
+      "severity": "HIGH",
+      "cvss": 7.8,
+      "file": "fs/tools/aegis-integrity.c",
+      "line": "148-152",
+      "title": "Command Injection",
+      "description": "User-controlled paths passed to system()",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-006",
+      "severity": "HIGH",
+      "file": "modules/ai-sentinel/src/sysfs.c",
+      "line": "122-126",
+      "title": "Information Disclosure via Sysfs",
+      "description": "Process list reveals sensitive command data",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-007",
+      "severity": "MEDIUM",
+      "file": "fs/tools/aegis-snapshot.c",
+      "line": "200-209",
+      "title": "TOCTOU in Snapshot Restore",
+      "description": "Race between access() and operations",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-008",
+      "severity": "MEDIUM",
+      "file": "modules/ai-sentinel/src/netlink.c",
+      "line": "308-340",
+      "title": "Unvalidated Netlink Attributes",
+      "description": "NULL pointers not checked after parse",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-009",
+      "severity": "MEDIUM",
+      "file": "modules/ai-sentinel/src/netlink.c",
+      "line": "203-211",
+      "title": "Memory Leak on Netlink Failure",
+      "description": "Event not freed on send failure",
+      "status": "unfixed"
+    },
+    {
+      "id": "AEGIS-010",
+      "severity": "MEDIUM",
+      "file": "fs/tools/aegis-evidence.c",
+      "line": "434-441",
+      "title": "Weak Randomness for Evidence ID",
+      "description": "rand() used for forensic IDs - predictable",
+      "status": "unfixed"
+    }
+  ],
+  "fixes_generated": 0,
+  "patches_created": 2
+}

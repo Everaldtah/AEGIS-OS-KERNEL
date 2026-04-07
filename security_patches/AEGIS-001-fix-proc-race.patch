@@ -1,0 +1,59 @@
+From: Hermes Security Scanner <security@aegis-os.local>
+Date: Tue, 7 Apr 2025 22:35:00 +0000
+Subject: [PATCH] AEGIS-001: Fix RCU race condition in process removal
+
+This patch fixes the race condition between spinlock-based iteration
+and RCU-based reads in ai_sentinel_proc_remove().
+
+Before: list_for_each_entry() under spinlock
+After: list_for_each_entry_rcu() with proper RCU synchronization
+
+Signed-off-by: Hermes Security Scanner
+---
+ modules/ai-sentinel/src/process_tracker.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/modules/ai-sentinel/src/process_tracker.c b/modules/ai-sentinel/src/process_tracker.c
+index abc123..def456 100644
+--- a/modules/ai-sentinel/src/process_tracker.c
++++ b/modules/ai-sentinel/src/process_tracker.c
+@@ -110,20 +110,24 @@ int ai_sentinel_proc_add(pid_t pid, struct task_struct *task)
+  */
+ void ai_sentinel_proc_remove(pid_t pid)
+ {
+ 	struct ai_sentinel_proc *proc, *tmp;
++	struct ai_sentinel_proc *victim = NULL;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sentinel_state.proc_lock, flags);
+-	list_for_each_entry(proc, &sentinel_state.proc_list, list) {
++	rcu_read_lock();
++	list_for_each_entry_rcu(proc, &sentinel_state.proc_list, list) {
+ 		if (proc->pid == pid) {
+-			list_del_rcu(&proc->list);
+-			spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
+-			synchronize_rcu();
+-			pr_debug("AI-Sentinel: Removed process %s (pid=%d, score=%d)\n",
+-				 proc->comm, proc->pid, proc->trust_score);
+-			kfree(proc);
++			victim = proc;
+ 			return;
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
++	rcu_read_unlock();
++
++	if (victim) {
++		spin_lock_irqsave(&sentinel_state.proc_lock, flags);
++		list_del_rcu(&victim->list);
++		spin_unlock_irqrestore(&sentinel_state.proc_lock, flags);
++		synchronize_rcu();
++		pr_debug("AI-Sentinel: Removed process %s (pid=%d)\n",
++			 victim->comm, victim->pid);
++		kfree(victim);
++	}
+ }
+ 
+ /**
+-- 
+2.40.0

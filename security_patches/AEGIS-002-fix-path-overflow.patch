@@ -1,0 +1,72 @@
+From: Hermes Security Scanner <security@aegis-os.local>
+Date: Tue, 7 Apr 2025 22:36:00 +0000
+Subject: [PATCH] AEGIS-002: Fix buffer overflow in path handling
+
+This patch adds bounds checking to prevent buffer overflow when
+handling dentry_path_raw() results that may exceed PATH_MAX.
+
+Signed-off-by: Hermes Security Scanner
+---
+ modules/ai-sentinel/src/hooks.c | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/modules/ai-sentinel/src/hooks.c b/modules/ai-sentinel/src/hooks.c
+index abc123..def456 100644
+--- a/modules/ai-sentinel/src/hooks.c
++++ b/modules/ai-sentinel/src/hooks.c
+@@ -51,10 +51,16 @@ int ai_sentinel_bprm_check_security(struct linux_binprm *bprm)
+ 	/* Get executable path */
+ 	if (bprm->file && bprm->file->f_path.dentry) {
+ 		char *path = event->data.file.path;
+-		char *tmp = dentry_path_raw(bprm->file->f_path.dentry,
+-					 path, PATH_MAX);
++		char *tmp = dentry_path_raw(bprm->file->f_path.dentry, 
++						path, PATH_MAX);
+ 		if (IS_ERR(tmp))
+ 			path[0] = '\0';
+-		else if (tmp != path)
+-			memmove(path, tmp, strlen(tmp) + 1);
++		else if (tmp != path) {
++			size_t len = strlen(tmp);
++			if (len >= PATH_MAX) {
++				path[0] = '\0';
++			} else {
++				memmove(path, tmp, len + 1);
++			}
++		}
+ 	}
+ 
+ 	/* Calculate severity */
+@@ -151,10 +157,16 @@ int ai_sentinel_file_permission(struct file *file, int mask)
+ 	/* Get file path */
+ 	if (file->f_path.dentry) {
+ 		char *path = event->data.file.path;
+-		char *tmp = dentry_path_raw(file->f_path.dentry,
+-					 path, PATH_MAX);
++		char *tmp = dentry_path_raw(file->f_path.dentry, 
++						path, PATH_MAX);
+ 		if (IS_ERR(tmp))
+ 			path[0] = '\0';
+-		else if (tmp != path)
+-			memmove(path, tmp, strlen(tmp) + 1);
++		else if (tmp != path) {
++			size_t len = strlen(tmp);
++			if (len >= PATH_MAX) {
++				path[0] = '\0';
++			} else {
++				memmove(path, tmp, len + 1);
++			}
++		}
+ 	}
+ 
+ 	event->severity = ai_sentinel_calculate_severity(event);
+@@ -162,4 +174,4 @@ int ai_sentinel_file_permission(struct file *file, int mask)
+ 	/* Log significant file operations */
+ 	if (sentinel_state.config.log_all_events ||
+ 	 event->severity >= AI_SENTINEL_SEV_MEDIUM) {
+-		ai_sentinel_event_queue(event);
+\ No newline at end of file
++		ai_sentinel_event_queue(event);
+\ No newline at end of file
+-- 
+2.40.0
