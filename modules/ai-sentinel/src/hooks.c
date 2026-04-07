@@ -54,11 +54,17 @@ int ai_sentinel_bprm_check_security(struct linux_binprm *bprm)
 	if (bprm->file && bprm->file->f_path.dentry) {
 		char *path = event->data.file.path;
 		char *tmp = dentry_path_raw(bprm->file->f_path.dentry,
-					    path, PATH_MAX);
-		if (IS_ERR(tmp))
+					 path, PATH_MAX);
+		if (IS_ERR(tmp)) {
 			path[0] = '\0';
-		else if (tmp != path)
-			memmove(path, tmp, strlen(tmp) + 1);
+		} else if (tmp != path) {
+			size_t len = strlen(tmp);
+			if (len >= PATH_MAX) {
+				path[0] = '\0';
+			} else {
+				memmove(path, tmp, len + 1);
+			}
+		}
 	}
 
 	/* Calculate severity */
@@ -154,11 +160,17 @@ int ai_sentinel_file_permission(struct file *file, int mask)
 	if (file->f_path.dentry) {
 		char *path = event->data.file.path;
 		char *tmp = dentry_path_raw(file->f_path.dentry,
-					    path, PATH_MAX);
-		if (IS_ERR(tmp))
+					 path, PATH_MAX);
+		if (IS_ERR(tmp)) {
 			path[0] = '\0';
-		else if (tmp != path)
-			memmove(path, tmp, strlen(tmp) + 1);
+		} else if (tmp != path) {
+			size_t len = strlen(tmp);
+			if (len >= PATH_MAX) {
+				path[0] = '\0';
+			} else {
+				memmove(path, tmp, len + 1);
+			}
+		}
 	}
 
 	event->severity = ai_sentinel_calculate_severity(event);
